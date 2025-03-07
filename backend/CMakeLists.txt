@@ -11,7 +11,7 @@ find_package(Threads REQUIRED)
 # Add Crow as a dependency (assuming it's in the project or installed)
 # If Crow is installed system-wide, you can use find_package(Crow REQUIRED)
 # For now, we'll assume it's in the project
-add_subdirectory(vendor/crow)
+add_subdirectory(vendor/Crow)
 
 # Add source files
 set(SOURCES

@@ -25,12 +25,11 @@ int main() {
   // Enable CORS
   CROW_ROUTE(app, "/<path>")
     .methods("POST"_method, "GET"_method, "PUT"_method, "DELETE"_method, "OPTIONS"_method)
-    ([](const crow::request& req) {
-      crow::response res;
+    ([](const crow::request& req, crow::response& res, const std::string& path) {
       res.add_header("Access-Control-Allow-Origin", "*");
       res.add_header("Access-Control-Allow-Methods", "POST, GET, PUT, DELETE, OPTIONS");
       res.add_header("Access-Control-Allow-Headers", "X-Requested-With, Content-Type, Accept");
-      return res;
+      res.end();
     });
 
   // Register routes

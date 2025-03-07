@@ -7,7 +7,7 @@ BASE_URL = "http://localhost:8000/api"
 
 def get_all_pickups():
     try:
-        response = requests.get(f"{BASE_URL}/wastepickups")
+        response = requests.get(f"{BASE_URL}/pickups")
         if response.status_code == 200:
             return response.json()
         else:
@@ -18,7 +18,7 @@ def get_all_pickups():
 
 def get_pickup_by_id(pickup_id):
     try:
-        response = requests.get(f"{BASE_URL}/wastepickups/{pickup_id}")
+        response = requests.get(f"{BASE_URL}/pickups/{pickup_id}")
         if response.status_code == 200:
             return response.json()
         else:
@@ -30,14 +30,15 @@ def get_pickup_by_id(pickup_id):
 def create_pickup(waste_type, pickup_location, pickup_date_time, user_name):
     try:
         payload = {
-            "wasteType": waste_type,
-            "pickupLocation": pickup_location,
-            "pickupDateTime": pickup_date_time,
-            "userName": user_name
+            "waste_type": waste_type,
+            "pickup_location": pickup_location,
+            "pickup_date_time": pickup_date_time,
+            "user_name": user_name,
+            "status": "pending"
         }
 
         response = requests.post(
-            f"{BASE_URL}/wastepickups",
+            f"{BASE_URL}/pickups",
             json=payload,
             headers={"Content-Type": "application/json"}
         )
@@ -53,15 +54,15 @@ def create_pickup(waste_type, pickup_location, pickup_date_time, user_name):
 def update_pickup(pickup_id, waste_type, pickup_location, pickup_date_time, status, user_name):
     try:
         payload = {
-            "wasteType": waste_type,
-            "pickupLocation": pickup_location,
-            "pickupDateTime": pickup_date_time,
+            "waste_type": waste_type,
+            "pickup_location": pickup_location,
+            "pickup_date_time": pickup_date_time,
             "status": status,
-            "userName": user_name
+            "user_name": user_name
         }
 
         response = requests.put(
-            f"{BASE_URL}/wastepickups/{pickup_id}",
+            f"{BASE_URL}/pickups/{pickup_id}",
             json=payload,
             headers={"Content-Type": "application/json"}
         )
@@ -76,7 +77,7 @@ def update_pickup(pickup_id, waste_type, pickup_location, pickup_date_time, stat
 
 def delete_pickup(pickup_id):
     try:
-        response = requests.delete(f"{BASE_URL}/wastepickups/{pickup_id}")
+        response = requests.delete(f"{BASE_URL}/pickups/{pickup_id}")
         if response.status_code == 200:
             return {"success": True}
         else:

@@ -1,24 +1,21 @@
 #pragma once
 
-#include "../view/waste_pickup_view.h"
+#include "model/waste_pickup.h"
 #include <crow.h>
+#include <sqlite3.h>
 
 class WastePickupController {
-private:
-  WastePickupView view;
-
 public:
-  WastePickupController(sqlite3 *db);
-
-  // Register endpoints with Crow
-  void registerRoutes(crow::App<> &app);
+    explicit WastePickupController(sqlite3* db);
+    void registerRoutes(crow::SimpleApp& app);
 
 private:
-  // Handler methods
-  crow::response createPickup(const crow::request &req);
-  crow::response getPickupById(int id);
-  crow::response getAllPickups();
-  crow::response updatePickup(int id, const crow::request &req);
-  crow::response deletePickup(int id);
-  crow::response getEnvironmentalData();
+    sqlite3* db;
+
+    // Route handlers
+    crow::response getAllPickups();
+    crow::response getPickupById(int id);
+    crow::response createPickup(const crow::request& req);
+    crow::response updatePickup(const crow::request& req, int id);
+    crow::response deletePickup(int id);
 };

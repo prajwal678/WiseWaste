@@ -12,7 +12,7 @@ def show_request_pickup():
         # Waste type selection
         waste_type = st.selectbox(
             "Waste Type",
-            options=["Plastic", "Electronic", "Hazardous", "Organic"],
+            options=["plastic", "electronic", "hazardous", "organic"],
             help="Select the type of waste for pickup"
         )
 
@@ -97,8 +97,7 @@ def show_request_pickup():
                 st.info(
                     "You can track your pickup status using the Track Pickup page.")
             else:
-                st.error(f"Failed to schedule pickup: {
-                         result.get('error', 'Unknown error')}")
+                st.error(f"Failed to schedule pickup: {result.get('error', 'Unknown error')}")
 
     # Display information about waste types
     st.markdown("<h2 class='sub-header'>Waste Type Information</h2>",

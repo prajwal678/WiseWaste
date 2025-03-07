@@ -1,62 +1,136 @@
 #include "waste_pickup_controller.h"
+#include <crow.h>
 #include <nlohmann/json.hpp>
 
 using json = nlohmann::json;
 
-WastePickupController::WastePickupController(sqlite3 *db) : view(db) {
-  // Check for completed pickups periodically
-  view.checkAndUpdateCompletedStatus();
-}
+WastePickupController::WastePickupController(sqlite3 *db) : db(db) {}
 
-void WastePickupController::registerRoutes(crow::App<> &app) {
-  // GET /api/wastepickups
+void WastePickupController::registerRoutes(crow::SimpleApp &app) {
+  // GET all pickups
   CROW_ROUTE(app, "/api/wastepickups")
-      .methods(crow::HTTPMethod::GET)(
-          [this](const crow::request &req) { return this->getAllPickups(); });
+      .methods("GET"_method)(
+          [this](const crow::request &) { return this->getAllPickups(); });
 
-  // GET /api/wastepickups/<id>
+  // GET pickup by ID
   CROW_ROUTE(app, "/api/wastepickups/<int>")
-      .methods(crow::HTTPMethod::GET)(
-          [this](int id) { return this->getPickupById(id); });
+      .methods("GET"_method)(
+          [this](const crow::request &, int id) { return this->getPickupById(id); });
 
-  // POST /api/wastepickups
+  // POST new pickup
   CROW_ROUTE(app, "/api/wastepickups")
-      .methods(crow::HTTPMethod::POST)(
+      .methods("POST"_method)(
           [this](const crow::request &req) { return this->createPickup(req); });
 
-  // PUT /api/wastepickups/<id>
+  // PUT update pickup
   CROW_ROUTE(app, "/api/wastepickups/<int>")
-      .methods(crow::HTTPMethod::PUT)([this](const crow::request &req, int id) {
-        return this->updatePickup(id, req);
+      .methods("PUT"_method)([this](const crow::request &req, int id) {
+        return this->updatePickup(req, id);
       });
 
-  // DELETE /api/wastepickups/<id>
+  // DELETE pickup
   CROW_ROUTE(app, "/api/wastepickups/<int>")
-      .methods(crow::HTTPMethod::DELETE)(
-          [this](int id) { return this->deletePickup(id); });
+      .methods("DELETE"_method)(
+          [this](const crow::request &, int id) { return this->deletePickup(id); });
+}
 
-  // GET /api/environmental-impact
-  CROW_ROUTE(app, "/api/environmental-impact")
-      .methods(crow::HTTPMethod::GET)(
-          [this]() { return this->getEnvironmentalData(); });
+crow::response WastePickupController::getAllPickups() {
+  try {
+    auto pickups = WastePickup::getAll(db);
+    json response;
+    for (const auto &pickup : pickups) {
+      response.push_back(json::parse(pickup->toJson()));
+    }
+    return crow::response(response.dump());
+  } catch (const std::exception &e) {
+    return crow::response(500, e.what());
+  }
+}
+
+crow::response WastePickupController::getPickupById(int id) {
+  try {
+    auto pickup = WastePickup::getById(db, id);
+    if (!pickup) {
+      return crow::response(404, "Pickup not found");
+    }
+    return crow::response(pickup->toJson());
+  } catch (const std::exception &e) {
+    return crow::response(500, e.what());
+  }
 }
 
 crow::response WastePickupController::createPickup(const crow::request &req) {
-  auto bodyStr = req.body;
-
   try {
-    json body = json::parse(bodyStr);
-
-    if (!body.contains("wasteType") || !body.contains("pickupLocation") ||
-        !body.contains("pickupDateTime") || !body.contains("userName")) {
-
+    auto jsonData = json::parse(req.body);
+    
+    // Validate required fields
+    if (!jsonData.contains("wasteType") || !jsonData.contains("pickupLocation") ||
+        !jsonData.contains("pickupDateTime") || !jsonData.contains("userName")) {
       return crow::response(400, "Missing required fields");
     }
 
-    std::string wasteType = body["wasteType"];
-    std::string location = body["pickupLocation"];
-    std::string dateTime = body["pickupDateTime"];
-    std::string userName = body["userName"];
+    // Create pickup object
+    auto pickup = WastePickup::fromJson(req.body);
+    if (!pickup) {
+      return crow::response(400, "Invalid pickup data");
+    }
 
-    bool success =
-        view.createPickupRequest(wasteType, location, dateTime, userName);
+    // Save to database
+    if (!WastePickup::create(db, *pickup)) {
+      return crow::response(500, "Failed to create pickup");
+    }
+
+    return crow::response(201, pickup->toJson());
+  } catch (const std::exception &e) {
+    return crow::response(500, e.what());
+  }
+}
+
+crow::response WastePickupController::updatePickup(const crow::request &req, int id) {
+  try {
+    auto pickup = WastePickup::getById(db, id);
+    if (!pickup) {
+      return crow::response(404, "Pickup not found");
+    }
+
+    auto jsonData = json::parse(req.body);
+    if (jsonData.contains("wasteType")) {
+      pickup->setWasteType(WastePickup::stringToWasteType(jsonData["wasteType"]));
+    }
+    if (jsonData.contains("pickupLocation")) {
+      pickup->setPickupLocation(jsonData["pickupLocation"]);
+    }
+    if (jsonData.contains("pickupDateTime")) {
+      auto timeStr = jsonData["pickupDateTime"].get<std::string>();
+      std::tm tm = {};
+      std::stringstream ss(timeStr);
+      ss >> std::get_time(&tm, "%Y-%m-%d %H:%M:%S");
+      pickup->setPickupDateTime(std::chrono::system_clock::from_time_t(std::mktime(&tm)));
+    }
+    if (jsonData.contains("status")) {
+      pickup->setStatus(WastePickup::stringToStatus(jsonData["status"]));
+    }
+    if (jsonData.contains("userName")) {
+      pickup->setUserName(jsonData["userName"]);
+    }
+
+    if (!WastePickup::update(db, *pickup)) {
+      return crow::response(500, "Failed to update pickup");
+    }
+
+    return crow::response(pickup->toJson());
+  } catch (const std::exception &e) {
+    return crow::response(500, e.what());
+  }
+}
+
+crow::response WastePickupController::deletePickup(int id) {
+  try {
+    if (!WastePickup::remove(db, id)) {
+      return crow::response(404, "Pickup not found");
+    }
+    return crow::response(204);
+  } catch (const std::exception &e) {
+    return crow::response(500, e.what());
+  }
+}

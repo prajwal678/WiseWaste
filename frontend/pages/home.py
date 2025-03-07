@@ -1,142 +1,179 @@
 import streamlit as st
-import pandas as pd
-import altair as alt
-from utils.api import get_all_pickups, get_environmental_impact
-from datetime import datetime
-
+from utils.api import get_environmental_impact
 
 def show_home():
-    st.markdown("<h1 class='main-header'>Smart Waste Management Dashboard</h1>",
+    st.markdown("<h1 class='main-header'>Welcome to Smart Waste Management</h1>",
+                unsafe_allow_html=True)
+
+    # Display environmental impact information
+    st.markdown("<h2 class='sub-header'>Environmental Impact</h2>",
                 unsafe_allow_html=True)
 
     # Get environmental impact data
     impact_data = get_environmental_impact()
 
-    # Get all pickups for statistics
-    all_pickups = get_all_pickups()
+    if "error" in impact_data:
+        st.error(f"Failed to fetch environmental impact data: {impact_data['error']}")
+    else:
+        # Display impact metrics
+        col1, col2, col3 = st.columns(3)
 
-    # Check if API call was successful
-    if isinstance(impact_data, dict) and "error" in impact_data:
-        st.error(f"Could not load environmental impact data: {
-                 impact_data['error']}")
-        impact_data = {"totalRecycledWaste": 0, "co2Reduction": 0,
-                       "wasteTypeDistribution": {}, "totalCompletedPickups": 0}
+        with col1:
+            st.metric(
+                "CO2 Emissions Reduced",
+                f"{impact_data.get('co2_reduced', 0):.1f} kg",
+                help="Estimated CO2 emissions reduced through proper waste management"
+            )
 
-    if isinstance(all_pickups, dict) and "error" in all_pickups:
-        st.error(f"Could not load pickup data: {all_pickups['error']}")
-        all_pickups = []
+        with col2:
+            st.metric(
+                "Waste Diverted",
+                f"{impact_data.get('waste_diverted', 0):.1f} kg",
+                help="Total waste diverted from landfills"
+            )
 
-    # Display environmental impact metrics
-    st.markdown("<h2 class='sub-header'>Environmental Impact</h2>",
+        with col3:
+            st.metric(
+                "Trees Saved",
+                f"{impact_data.get('trees_saved', 0):.1f}",
+                help="Equivalent number of trees saved through recycling"
+            )
+
+    # Quick actions
+    st.markdown("<h2 class='sub-header'>Quick Actions</h2>",
                 unsafe_allow_html=True)
 
     col1, col2, col3 = st.columns(3)
 
     with col1:
-        st.metric(
-            label="Total Waste Recycled",
-            value=f"{impact_data.get('totalRecycledWaste', 0):.1f} kg",
-            delta=None
-        )
+        if st.button("🗑️ Request Pickup", use_container_width=True):
+            st.session_state.page = 'request_pickup'
+            st.experimental_rerun()
 
     with col2:
-        st.metric(
-            label="CO₂ Emissions Reduced",
-            value=f"{impact_data.get('co2Reduction', 0):.1f} kg",
-            delta=None
-        )
+        if st.button("🔍 Track Pickup", use_container_width=True):
+            st.session_state.page = 'track_pickup'
+            st.experimental_rerun()
 
     with col3:
-        st.metric(
-            label="Completed Pickups",
-            value=impact_data.get('totalCompletedPickups', 0),
-            delta=None
-        )
+        if st.button("📋 View All Pickups", use_container_width=True):
+            st.session_state.page = 'view_pickups'
+            st.experimental_rerun()
 
-    # Create visualizations
-    st.markdown("<h2 class='sub-header'>Waste Distribution</h2>",
+    # Waste management guidelines
+    st.markdown("<h2 class='sub-header'>Waste Management Guidelines</h2>",
                 unsafe_allow_html=True)
 
-    # Waste Type Distribution
-    waste_dist = impact_data.get('wasteTypeDistribution', {})
-    if waste_dist:
-        waste_df = pd.DataFrame(list(waste_dist.items()), columns=[
-                                'Waste Type', 'Count'])
+    tab1, tab2, tab3, tab4 = st.tabs([
+        "♻️ Plastic", "🖥️ Electronic", "☢️ Hazardous", "🌱 Organic"
+    ])
 
-        # Create pie chart
-        chart = alt.Chart(waste_df).mark_arc().encode(
-            theta=alt.Theta(field="Count", type="quantitative"),
-            color=alt.Color(field="Waste Type", type="nominal",
-                            scale=alt.Scale(scheme='category10')),
-            tooltip=['Waste Type', 'Count']
-        ).properties(
-            width=400,
-            height=300,
-            title='Waste Type Distribution'
-        )
-
-        st.altair_chart(chart, use_container_width=True)
-    else:
-        st.info("No waste collection data available yet.")
-
-    # Recent Activity
-    st.markdown("<h2 class='sub-header'>Recent Activity</h2>",
-                unsafe_allow_html=True)
-
-    if all_pickups and len(all_pickups) > 0:
-        # Convert to DataFrame
-        df = pd.DataFrame(all_pickups)
-
-        # Sort by creation timestamp (most recent first)
-        if 'creationTimestamp' in df.columns:
-            df['creationTimestamp'] = pd.to_datetime(df['creationTimestamp'])
-            df = df.sort_values('creationTimestamp', ascending=False)
-
-        # Display recent pickups
-        recent_pickups = df.head(5)
-
-        for _, pickup in recent_pickups.iterrows():
-            status_color = "green" if pickup['status'] == "Completed" else "blue" if pickup['status'] == "Scheduled" else "orange"
-
-            st.markdown(f"""
-            <div style="border:1px solid #ddd; padding:10px; margin-bottom:10px; border-left:5px solid {status_color};">
-                <p><strong>{pickup['wasteType']} Waste</strong> pickup at {pickup['pickupLocation']}</p>
-                <p>Status: <span style="color:{status_color};">{pickup['status']}</span> •
-                Scheduled for: {pickup['pickupDateTime']} •
-                User: {pickup['userName']}</p>
-            </div>
-            """, unsafe_allow_html=True)
-    else:
-        st.info("No recent activity yet.")
-
-    # Quick Tips
-    st.markdown("<h2 class='sub-header'>Waste Management Tips</h2>",
-                unsafe_allow_html=True)
-
-    tips_col1, tips_col2 = st.columns(2)
-
-    with tips_col1:
+    with tab1:
         st.markdown("""
-        #### Plastic Waste
-        - Rinse containers before recycling
-        - Remove caps and lids
-        - Check for recycling symbols (1-7)
+        ### Plastic Waste Guidelines
         
-        #### Electronic Waste
-        - Remove batteries before disposal
-        - Wipe personal data from devices
-        - Consider donating working electronics
+        **Acceptable Items:**
+        - Plastic bottles and containers (types 1-7)
+        - Plastic bags and wraps
+        - Polystyrene foam containers
+        
+        **Preparation:**
+        - Rinse all containers
+        - Remove caps and lids
+        - Flatten items to save space
+        
+        **Not Accepted:**
+        - Plastic with food residue
+        - Plastic medical waste
+        - Certain plastic toys with electronics
         """)
 
-    with tips_col2:
+    with tab2:
         st.markdown("""
-        #### Hazardous Waste
-        - Keep in original containers if possible
-        - Never mix hazardous materials
-        - Store away from heat sources
+        ### Electronic Waste Guidelines
         
-        #### Organic Waste
-        - Consider home composting
-        - Remove packaging before disposal
-        - Avoid mixing with non-organic waste
+        **Acceptable Items:**
+        - Computers and laptops
+        - Mobile phones and tablets
+        - Printers and scanners
+        - Electronic appliances
+        - Cables and chargers
+        
+        **Preparation:**
+        - Remove batteries if possible
+        - Clear personal data from devices
+        - Package items securely
+        
+        **Not Accepted:**
+        - Items with leaking batteries
+        - Smoke detectors
+        - Large appliances (schedule special pickup)
+        """)
+
+    with tab3:
+        st.markdown("""
+        ### Hazardous Waste Guidelines
+        
+        **Acceptable Items:**
+        - Batteries
+        - Paint and solvents
+        - Cleaning chemicals
+        - Motor oil and antifreeze
+        - Pesticides and herbicides
+        - Fluorescent bulbs
+        
+        **Preparation:**
+        - Keep in original containers when possible
+        - Secure lids and prevent leaks
+        - Label unidentified materials if possible
+        
+        **Not Accepted:**
+        - Explosive materials
+        - Radioactive waste
+        - Medical waste (contact healthcare provider)
+        """)
+
+    with tab4:
+        st.markdown("""
+        ### Organic Waste Guidelines
+        
+        **Acceptable Items:**
+        - Food scraps
+        - Yard trimmings
+        - Paper towels and napkins
+        - Coffee grounds and filters
+        - Tea bags
+        
+        **Preparation:**
+        - Remove packaging
+        - Keep separate from other waste types
+        - Use compostable bags if available
+        
+        **Not Accepted:**
+        - Plastic or biodegradable plastic bags
+        - Pet waste
+        - Large tree branches
+        - Diseased plants
+        """)
+
+    # Contact information
+    st.markdown("<h2 class='sub-header'>Contact Us</h2>",
+                unsafe_allow_html=True)
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.markdown("""
+        **Customer Support:**
+        - Phone: (555) 123-4567
+        - Email: support@wisewaste.com
+        - Hours: Mon-Fri, 9:00 AM - 6:00 PM
+        """)
+
+    with col2:
+        st.markdown("""
+        **Emergency Pickup:**
+        - Phone: (555) 987-6543
+        - Available: 24/7
+        - For urgent waste collection needs
         """)
