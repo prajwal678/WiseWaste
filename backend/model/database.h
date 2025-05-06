@@ -12,7 +12,6 @@ public:
     bool connect();
     sqlite3* getDb() const;
     
-    // Helper methods for database operations
     bool executeQuery(const std::string& query);
     bool executeQueryWithCallback(const std::string& query, 
                                 int (*callback)(void*, int, char**, char**), 

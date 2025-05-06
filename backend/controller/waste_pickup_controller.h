@@ -12,7 +12,6 @@ public:
 private:
     sqlite3* db;
 
-    // Route handlers
     crow::response getAllPickups();
     crow::response getPickupById(int id);
     crow::response createPickup(const crow::request& req);

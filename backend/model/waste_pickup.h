@@ -21,13 +21,12 @@ enum class PickupStatus {
 
 class WastePickup {
 public:
-    // Constructors
     WastePickup();
     explicit WastePickup(int id, WasteType type, const std::string& location,
                         const std::chrono::system_clock::time_point& dateTime,
                         PickupStatus status, const std::string& userName);
 
-    // Getters
+    // get
     int getId() const;
     WasteType getWasteType() const;
     std::string getPickupLocation() const;
@@ -35,14 +34,14 @@ public:
     PickupStatus getStatus() const;
     std::string getUserName() const;
 
-    // Setters
+    // set
     void setWasteType(WasteType type);
     void setPickupLocation(const std::string& location);
     void setPickupDateTime(const std::chrono::system_clock::time_point& dateTime);
     void setStatus(PickupStatus status);
     void setUserName(const std::string& name);
 
-    // Database operations
+    // db ops
     static bool create(sqlite3* db, const WastePickup& pickup);
     static std::unique_ptr<WastePickup> getById(sqlite3* db, int id);
     static std::vector<std::unique_ptr<WastePickup>> getByStatus(sqlite3* db, PickupStatus status);
@@ -52,11 +51,9 @@ public:
     static bool remove(sqlite3* db, int id);
     static void updateCompletedStatus(sqlite3* db);
 
-    // JSON conversion
     std::string toJson() const;
     static std::unique_ptr<WastePickup> fromJson(const std::string& jsonStr);
 
-    // Helper methods
     static std::string wasteTypeToString(WasteType type);
     static WasteType stringToWasteType(const std::string& str);
     static std::string statusToString(PickupStatus status);

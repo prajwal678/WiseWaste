@@ -1,2 +1,6 @@
-.venv
-./frontend/u
+./frontend/.venv
+./frontend/pages/__pycache__/ 
+./frontend/utils/__pycache__/
+./backend/build/
+./backend/vendor/
+./.gitmodules

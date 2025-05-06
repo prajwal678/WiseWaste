@@ -7,28 +7,23 @@ using json = nlohmann::json;
 WastePickupController::WastePickupController(sqlite3 *db) : db(db) {}
 
 void WastePickupController::registerRoutes(crow::SimpleApp &app) {
-  // GET all pickups
   CROW_ROUTE(app, "/api/wastepickups")
       .methods("GET"_method)(
           [this](const crow::request &) { return this->getAllPickups(); });
 
-  // GET pickup by ID
   CROW_ROUTE(app, "/api/wastepickups/<int>")
       .methods("GET"_method)(
           [this](const crow::request &, int id) { return this->getPickupById(id); });
 
-  // POST new pickup
   CROW_ROUTE(app, "/api/wastepickups")
       .methods("POST"_method)(
           [this](const crow::request &req) { return this->createPickup(req); });
 
-  // PUT update pickup
   CROW_ROUTE(app, "/api/wastepickups/<int>")
       .methods("PUT"_method)([this](const crow::request &req, int id) {
         return this->updatePickup(req, id);
       });
 
-  // DELETE pickup
   CROW_ROUTE(app, "/api/wastepickups/<int>")
       .methods("DELETE"_method)(
           [this](const crow::request &, int id) { return this->deletePickup(id); });
@@ -63,19 +58,16 @@ crow::response WastePickupController::createPickup(const crow::request &req) {
   try {
     auto jsonData = json::parse(req.body);
     
-    // Validate required fields
     if (!jsonData.contains("wasteType") || !jsonData.contains("pickupLocation") ||
         !jsonData.contains("pickupDateTime") || !jsonData.contains("userName")) {
       return crow::response(400, "Missing required fields");
     }
 
-    // Create pickup object
     auto pickup = WastePickup::fromJson(req.body);
     if (!pickup) {
       return crow::response(400, "Invalid pickup data");
     }
 
-    // Save to database
     if (!WastePickup::create(db, *pickup)) {
       return crow::response(500, "Failed to create pickup");
     }

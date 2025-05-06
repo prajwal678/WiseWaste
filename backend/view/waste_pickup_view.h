@@ -14,7 +14,6 @@ private:
 public:
   WastePickupView(sqlite3 *db);
 
-  // Service methods for business logic
   bool createPickupRequest(const std::string &wasteType,
                            const std::string &pickupLocation,
                            const std::string &pickupDateTime,
@@ -35,9 +34,6 @@ public:
 
   bool cancelPickupRequest(int id);
 
-  // Auto-update completed status
   void checkAndUpdateCompletedStatus();
-
-  // Get environmental impact data
   std::string getEnvironmentalImpactData();
 };

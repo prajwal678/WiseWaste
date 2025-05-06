@@ -17,7 +17,7 @@ WastePickup::WastePickup(int id, WasteType type, const std::string& location,
     : id(id), wasteType(type), pickupLocation(location), 
       pickupDateTime(dateTime), status(status), userName(userName) {}
 
-// Getters
+// get
 int WastePickup::getId() const { return id; }
 WasteType WastePickup::getWasteType() const { return wasteType; }
 std::string WastePickup::getPickupLocation() const { return pickupLocation; }
@@ -25,14 +25,14 @@ std::chrono::system_clock::time_point WastePickup::getPickupDateTime() const { r
 PickupStatus WastePickup::getStatus() const { return status; }
 std::string WastePickup::getUserName() const { return userName; }
 
-// Setters
+// set
 void WastePickup::setWasteType(WasteType type) { wasteType = type; }
 void WastePickup::setPickupLocation(const std::string& location) { pickupLocation = location; }
 void WastePickup::setPickupDateTime(const std::chrono::system_clock::time_point& dateTime) { pickupDateTime = dateTime; }
 void WastePickup::setStatus(PickupStatus s) { status = s; }
 void WastePickup::setUserName(const std::string& name) { userName = name; }
 
-// Database operations
+// db ops
 bool WastePickup::create(sqlite3* db, const WastePickup& pickup) {
     const char* sql = "INSERT INTO waste_pickups (waste_type, pickup_location, pickup_datetime, status, user_name) "
                      "VALUES (?, ?, ?, ?, ?)";
@@ -243,7 +243,7 @@ void WastePickup::updateCompletedStatus(sqlite3* db) {
     sqlite3_finalize(stmt);
 }
 
-// Helper methods
+
 std::string WastePickup::wasteTypeToString(WasteType type) {
     switch (type) {
         case WasteType::PLASTIC: return "PLASTIC";
@@ -278,7 +278,6 @@ PickupStatus WastePickup::stringToStatus(const std::string& str) {
     return PickupStatus::PENDING;
 }
 
-// JSON conversion
 std::string WastePickup::toJson() const {
     std::stringstream ss;
     ss << "{"
@@ -293,12 +292,8 @@ std::string WastePickup::toJson() const {
 }
 
 std::unique_ptr<WastePickup> WastePickup::fromJson(const std::string& jsonStr) {
-    // Simple JSON parsing (you might want to use a proper JSON library)
-    // This is a basic implementation
     auto pickup = std::make_unique<WastePickup>();
     
-    // Extract values using string manipulation
-    // This is a simplified version - you should use a proper JSON parser
     size_t pos = jsonStr.find("\"id\":");
     if (pos != std::string::npos) {
         pickup->id = std::stoi(jsonStr.substr(pos + 5));

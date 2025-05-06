@@ -19,7 +19,6 @@ bool Database::connect() {
         return false;
     }
 
-    // Create tables if they don't exist
     const char* createTableSQL = 
         "CREATE TABLE IF NOT EXISTS waste_pickups ("
         "id INTEGER PRIMARY KEY AUTOINCREMENT,"
